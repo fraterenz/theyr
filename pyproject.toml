@@ -30,3 +30,6 @@ license = {file = "LICENSE"}
 addopts = [
   "--import-mode=importlib",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/theyr"]

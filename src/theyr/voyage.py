@@ -8,20 +8,10 @@ import re
 VESSELS = {9999982, 9999982}
 LOADS = {"Ballast", "Laden"}
 TARGET = {"MIN_FUEL", "MIN_TIME"}
-GROUPS = ["port_dep", "port_arr", "vessel", "load_cond", "target"]
+GROUPS = ["vessel", "load_cond", "port_dep", "port_arr", "target"]
 FILENAME_RE = re.compile(
     r"(\d+)_(Ballast|Laden)_(.+)_to_(.+)_(MIN_FUEL|MIN_TIME)_waypoints.csv"
 )
-
-
-class Voyage:
-    def __init__(self, port_dep, port_arr, vessel, load_cond, target, df):
-        self.port_dep = port_dep
-        self.port_arr = port_arr
-        self.vessel = vessel
-        self.load_cond = load_cond
-        self.target = target
-        self.df = df
 
 
 def parse_filename(path: Path):
@@ -41,24 +31,35 @@ def parse_filename(path: Path):
 def load_csv(path: Path):
     df = pd.read_csv(path, sep=",", index_col=False)
     df["wavePeriod [s]"] = df["wavePeriod [s]"].astype(int)
+    # all waypoints that have distance gr than 100 km
+    df["isOcean"] = df["distance [NM]"] > 54
+    df["filename"] = path.name
     return df
 
 
-def load_voyage(path: Path) -> Voyage:
+def load_voyage(path: Path) -> pd.DataFrame:
     assert isinstance(path, Path), f"path should be a Path found {type(path)}"
     df = load_csv(path)
-    return Voyage(**parse_filename(path), df=df)
+    info = parse_filename(path)
+    df["port_dep"] = info["port_dep"]
+    df["port_arr"] = info["port_arr"]
+    df["load_cond"] = info["load_cond"]
+    df.load_cond = df.load_cond.astype("category")
+    df["target"] = info["target"]
+    df.target = df.target.astype("category")
+    return df
 
 
-def load_all_waypoints(path2dir: Path):
+def load_all_waypoints(path2dir: Path) -> pd.DataFrame:
     assert isinstance(
         path2dir, Path
     ), f"path2dir should be a Path found {type(path2dir)}"
     assert isinstance(
         path2dir, Path
     ), f"path2dir should be a path to directory found {path2dir}"
-    return [
+    waypoints = [
         load_voyage(x)
         for x in path2dir.iterdir()
         if x.is_file() and "waypoints" in x.name
     ]
+    return pd.concat([waypoint for waypoint in waypoints], axis=0)
