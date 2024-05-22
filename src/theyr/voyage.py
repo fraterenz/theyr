@@ -12,6 +12,9 @@ GROUPS = ["vessel", "load_cond", "port_dep", "port_arr", "target"]
 FILENAME_RE = re.compile(
     r"(\d+)_(Ballast|Laden)_(.+)_to_(.+)_(MIN_FUEL|MIN_TIME)_waypoints.csv"
 )
+# any waypoints with distance greater than 100 km
+# can be assumed to be open ocean
+OPEN_OCEAN_MILES = 54
 
 
 def parse_filename(path: Path):
@@ -32,7 +35,7 @@ def load_csv(path: Path):
     df = pd.read_csv(path, sep=",", index_col=False)
     df["wavePeriod [s]"] = df["wavePeriod [s]"].astype(int)
     # all waypoints that have distance gr than 100 km
-    df["isOcean"] = df["distance [NM]"] > 54
+    df["isOcean"] = df["distance [NM]"] >= OPEN_OCEAN_MILES
     df["filename"] = path.name
     return df
 
