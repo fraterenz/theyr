@@ -43,6 +43,8 @@ def load_voyage(path: Path) -> pd.DataFrame:
     info = parse_filename(path)
     df["port_dep"] = info["port_dep"]
     df["port_arr"] = info["port_arr"]
+    df["vessel"] = info["vessel"]
+    df.vessel = df.vessel.astype("category")
     df["load_cond"] = info["load_cond"]
     df.load_cond = df.load_cond.astype("category")
     df["target"] = info["target"]
